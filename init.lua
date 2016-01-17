@@ -135,7 +135,7 @@ local function check_frame()
   ui.print("Got at read: "..spellchecker_process:read())
 end
 
-local function check_file(filename, save_as)
+local function check_file()
   local checker = get_checker()
   local uniq_words = {}
   local incrementor = 0
@@ -159,13 +159,13 @@ end
 
 
 local function disconnect_events()
-  events.disconnect(events.FILE_BEFORE_SAVE, check_file)
+  events.disconnect(events.FILE_AFTER_SAVE, check_file)
   events.disconnect(events.RESET_BEFORE, disconnect_events)
   kill_checker()
   buffer:indicator_clear_range(0, buffer.length)
 end
 local function connect_events()
-  events.connect(events.FILE_BEFORE_SAVE, check_file)
+  events.connect(events.FILE_AFTER_SAVE, check_file)
   events.connect(events.QUIT, disconnect_events)
   events.connect(events.RESET_BEFORE, disconnect_events)
 end
