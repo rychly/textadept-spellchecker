@@ -73,7 +73,6 @@ local function get_checker(dicts)
     if current_dicts ~= dicts and spellchecker_process then
       spellchecker_process:kill()
     end
-    print("Starting checker")
     spellchecker_process = spawn(SPELL_CHECKER.." -m -a "..dict_switch, nil, parse, parse_err, parse_exit)
     if spellchecker_process:status()  ~= "running" then
       error("Can not start spellchecker "..SPELL_CHECKER)
@@ -243,16 +242,14 @@ local function connect_events()
   events.connect(events.USER_LIST_SELECTION, on_suggestion_click)
 end
 
--- ашипка
-
 -- Check which spellcheckers present in the system
 for i, v in ipairs(SPELL_CHECKERS) do
-  local status = os.execute(v.." --help")
+  local status = io.popen(v.." -vv")
   if status then
-   -- ui.print("Added checker "..tostring(v))
-    table.insert(AVAILABLE_CHECKERS, v)
-  else
-   -- ui.print("Checker "..v.." not added due to error "..tostring(status))
+    local result = status:read()
+    if result and result:match("Ispell") then
+      table.insert(AVAILABLE_CHECKERS, v)
+    end
   end
 end
 
