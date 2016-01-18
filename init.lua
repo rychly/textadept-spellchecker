@@ -2,8 +2,8 @@
 -- Possible spellchecker program names
 local SPELL_CHECKERS = {"aspell", "hunspell", "hunspell.exe", "aspell.exe"}
 -- Event for spellchecking data receiving
-local SC_WORD_NOTFOUND = "SC_wordnotfound"
-local SC_WORD_SUGGEST = "SC_wordsuggest"
+local SC_WORD_ANSWER = "SC_wordsuggest"
+local SUGGESTION_LIST = 4242 -- List id
 -- Available checkers in current system (will be filled after module load)
 local AVAILABLE_CHECKERS = {}
 -- Current selected spellchecker
@@ -50,13 +50,12 @@ end
 ------------------------
 local function parse(checker_answer)
   -- Performs initial parsing of backend data and emits corresponding events
-  local mode, word, tail = checker_answer:match("([&#])%s+(%S+)(.*)")
-  if mode then
-    if mode == "&" then
-      local suggestions = tail:match(":(.+)")
-      events.emit(SC_WORD_SUGGEST, word, suggestions)
-    elseif mode == "#" then
-      events.emit(SC_WORD_NOTFOUND, word)
+  for line in checker_answer:gmatch("([^\r\n]*)\r?\n")
+  do
+    local mode, word, tail = line:match("([&#])%s+(%S+)(.*)")
+    if mode and mode:match("[#&]") then
+      local suggestions = tail:match(":%s?(.+)")
+      events.emit(SC_WORD_ANSWER, word, suggestions)
     end
   end
 end
@@ -74,7 +73,7 @@ local function get_checker(dicts)
     if current_dicts ~= dicts and spellchecker_process then
       spellchecker_process:kill()
     end
-    ui.print("Starting checker")
+    print("Starting checker")
     spellchecker_process = spawn(SPELL_CHECKER.." -m -a "..dict_switch, nil, parse, parse_err, parse_exit)
     if spellchecker_process:status()  ~= "running" then
       error("Can not start spellchecker "..SPELL_CHECKER)
@@ -110,7 +109,7 @@ local function highlight(word, suggestions)
   local pos = 1
   local last = 1
   while pos do
-    pos = text:find("[%p%s]"..word.."[%p%s]", last)
+    pos = text:find("[%s%p]"..word.."[%s%p]", last)
     if pos then
       last = pos + word_len
       buffer.indicator_current = style
@@ -127,6 +126,7 @@ local function check_text(text)
   -- Performs spelling check for supplied visible text
   local checker = get_checker()
   local uniq_words = {}
+  -- for word in text:gmatch("[^%s%p][^%s%p]+")
   for word in text:gmatch("[^%s%p][^%s%p]+")
   do
     if not uniq_words[word] and word:len() > 1 then
@@ -135,10 +135,8 @@ local function check_text(text)
   end
   -- Not sure how events work in textadept.
   -- Reconnect events just in case
-  events.disconnect(SC_WORD_NOTFOUND, highlight)
-  events.disconnect(SC_WORD_SUGGEST, highlight)
-  events.connect(SC_WORD_NOTFOUND, highlight)
-  events.connect(SC_WORD_SUGGEST, highlight)
+  events.disconnect(SC_WORD_ANSWER, highlight)
+  events.connect(SC_WORD_ANSWER, highlight)
   for word,_ in pairs(uniq_words)
   do
     checker:write(word.."\n")
@@ -152,6 +150,8 @@ local function check_frame()
   local finish = buffer:position_from_line(lastline+1)
   if start == -1 then start = 0 end
   if finish == -1 then finish = buffer.length end
+  start = buffer:word_start_position(start, false)
+  finish = buffer:word_end_position(finish, false)
   buffer:indicator_clear_range(start, finish)
   check_text(buffer:text_range(start, finish))
 end
@@ -162,7 +162,65 @@ local function check_file()
   check_text(buffer:text_range(0, buffer.length))
 end
 
+---------------------------
+-- Indicator click handler
+---------------------------
 
+-- autocomplete handler will be placed here to avoid presence of
+-- many anonimous handlers in event table
+local current_autocomplete_handler = false
+
+-- Word begining and lenght for correct substitution of suggestion
+local g_word_start = 0
+local g_word_length = 0
+
+-- only this autocomplete handler presents in event table
+local function on_answer(word, suggestion)
+  -- Handles autocompletion answer if it is nessesary
+  -- then removes handler
+  if current_autocomplete_handler and suggestion then
+    current_autocomplete_handler(word, suggestion)
+  end
+  current_autocomplete_handler = false
+end
+
+local function on_suggestion_click(list_id, selection, pos)
+  -- Handles click on item in suggestion list and replaces mistake
+  if list_id == SUGGESTION_LIST then
+    if selection ~= _L["Add to personal dictionary"] then
+      buffer:delete_range(g_word_start, g_word_length)
+      buffer:insert_text(buffer.current_pos, selection)
+    else
+      -- TODO: addition to the dictionary
+      ui.print("Spellchecker: Dictionary addition not implemented yet")
+    end
+  end
+end
+
+local function on_indicator_click(pos, mod)
+  -- Handles click on indicator and shows suggestion menu
+  if mod ~= 0 then return end -- no modificators should be pressed
+  local word_start = buffer:word_start_position(pos, true)
+  local word_end = buffer:word_end_position(pos, true)
+  g_word_start = word_start
+  local word = buffer:text_range(word_start, word_end)
+  -- not sure how events in textadept work
+  -- reconnection just in case
+  events.disconnect(SC_WORD_ANSWER, on_answer)
+  events.disconnect(SC_WORD_ANSWER, highlight)
+  events.connect(SC_WORD_ANSWER, on_answer)
+  current_autocomplete_handler = function(origin_word, suggestions)
+    g_word_length = origin_word:len()
+    local old_separator = buffer.auto_c_separator
+    buffer.auto_c_separator = string.byte(",")
+    buffer:user_list_show(SUGGESTION_LIST,
+      suggestions:gsub(", ",",")..",".._L["Add to personal dictionary"]
+    )
+    buffer.auto_c_separator = old_separator
+  end
+  local checker = get_checker()
+  checker:write(word.."\n")
+end
 
 -------------------------------
 -- Module load/unload routines
@@ -170,6 +228,9 @@ end
 local function shutdown()
   events.disconnect(events.FILE_AFTER_SAVE, check_file)
   events.disconnect(events.RESET_BEFORE, shutdown)
+  events.disconnect(events.INDICATOR_CLICK, on_indicator_click)
+  events.disconnect(SC_WORD_ANSWER, on_answer)
+  events.disconnect(events.USER_LIST_SELECTION, on_suggestion_click)
   kill_checker()
   buffer:indicator_clear_range(0, buffer.length)
 end
@@ -177,22 +238,27 @@ local function connect_events()
   events.connect(events.FILE_AFTER_SAVE, check_file)
   events.connect(events.QUIT, shutdown)
   events.connect(events.RESET_BEFORE, shutdown)
+  events.connect(events.INDICATOR_CLICK, on_indicator_click)
+  events.connect(SC_WORD_ANSWER, on_answer)
+  events.connect(events.USER_LIST_SELECTION, on_suggestion_click)
 end
+
+-- ашипка
 
 -- Check which spellcheckers present in the system
 for i, v in ipairs(SPELL_CHECKERS) do
   local status = os.execute(v.." --help")
   if status then
-    ui.print("Added checker "..tostring(v))
+   -- ui.print("Added checker "..tostring(v))
     table.insert(AVAILABLE_CHECKERS, v)
   else
-    ui.print("Checker "..v.." not added due to error "..tostring(status))
+   -- ui.print("Checker "..v.." not added due to error "..tostring(status))
   end
 end
 
 -- Set default checker and register events when checker available
 if AVAILABLE_CHECKERS and AVAILABLE_CHECKERS[1] then
-  ui.print("Event registred!")
+  --ui.print("Event registred!")
   SPELL_CHECKER = AVAILABLE_CHECKERS[1]
   connect_events()
 end

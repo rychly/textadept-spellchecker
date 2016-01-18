@@ -8,7 +8,7 @@ Spell checking being performed via ispell compatible backend. (aspell and hunspe
 | Feature                                             | Status              |
 |----------------------------------------------------:|:--------------------|
 | Basic highlighting of mistakes after file saving    | Done                |
-| Suggestions via autocompletion interface            | TODO                |
+| Suggestions via autocompletion interface            | Done                |
 | Live checking support                               | TODO                |
 | GUI for backend and dictionary management           | TODO                |
 | Saving/Loading backend and dictionary configuration | TODO                |
