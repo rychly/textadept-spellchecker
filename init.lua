@@ -98,11 +98,13 @@ end
 ------------------------
 -- Document highlighting
 ------------------------
-local function highlight(word, style)
+local function highlight(word, suggestions)
   -- Highlights all occurences of given word in buffer with given style
   if word == nil or word:len() < 2 then
     return
   end
+  local style = 3
+  if suggestions then style = 1 end
   local word_len = word:len()
   local text = buffer:text_range(0, buffer.length)
   local pos = 1
@@ -131,8 +133,12 @@ local function check_text(text)
       uniq_words[word] = true
     end
   end
-  events.connect(SC_WORD_NOTFOUND, function(w) highlight(w, 3) end)
-  events.connect(SC_WORD_SUGGEST, function(w, s) highlight(w, 1) end)
+  -- Not sure how events work in textadept.
+  -- Reconnect events just in case
+  events.disconnect(SC_WORD_NOTFOUND, highlight)
+  events.disconnect(SC_WORD_SUGGEST, highlight)
+  events.connect(SC_WORD_NOTFOUND, highlight)
+  events.connect(SC_WORD_SUGGEST, highlight)
   for word,_ in pairs(uniq_words)
   do
     checker:write(word.."\n")
