@@ -1,6 +1,9 @@
 
 -- Possible spellchecker program names
 local SPELL_CHECKERS = {"aspell", "hunspell", "hunspell.exe", "aspell.exe"}
+-- Event for spellchecking data receiving
+local SC_WORD_NOTFOUND = "SC_wordnotfound"
+local SC_WORD_SUGGEST = "SC_wordsuggest"
 -- Available checkers in current system (will be filled after module load)
 local AVAILABLE_CHECKERS = {}
 -- Current selected spellchecker
@@ -45,31 +48,16 @@ end
 ------------------------
 -- Backend data parsing
 ------------------------
-local function highlight(word, style)
-  -- Highlights all occurences of given word in buffer with given style
-  if word == nil or word:len() < 2 then
-    return
-  end
-  local word_len = word:len()
-  local text = buffer:text_range(0, buffer.length)
-  local pos = 1
-  local last = 1
-  while pos do
-    pos = text:find("[%p%s]"..word.."[%p%s]", last)
-    if pos then
-      last = pos + word_len
-      buffer.indicator_current = style
-      buffer:indicator_fill_range( pos, word_len )
-    end
-  end
-end
-
 local function parse(checker_answer)
-  local word = checker_answer:match("%&%s+(%S+)") or checker_answer:match("%#%s+(%S+)")
-  if word then
-    local indicator = 3
-    if checker_answer:match("&") then indicator = 1 end
-    highlight(word, indicator)
+  -- Performs initial parsing of backend data and emits corresponding events
+  local mode, word, tail = checker_answer:match("([&#])%s+(%S+)(.*)")
+  if mode then
+    if mode == "&" then
+      local suggestions = tail:match(":(.+)")
+      events.emit(SC_WORD_SUGGEST, word, suggestions)
+    elseif mode == "#" then
+      events.emit(SC_WORD_NOTFOUND, word)
+    end
   end
 end
 
@@ -82,7 +70,7 @@ local function get_checker(dicts)
   if dicts and dicts:len() > 0 then
     dict_switch = "-d "..dicts
   end
-  if spellchecker_process == nil or spellchecker_process:status()  ~= "running" or current_dicts ~= dicts then
+  if not spellchecker_process or spellchecker_process:status()  ~= "running" or current_dicts ~= dicts then
     if current_dicts ~= dicts and spellchecker_process then
       spellchecker_process:kill()
     end
@@ -107,6 +95,29 @@ local function kill_checker()
   end
 end
 
+------------------------
+-- Document highlighting
+------------------------
+local function highlight(word, style)
+  -- Highlights all occurences of given word in buffer with given style
+  if word == nil or word:len() < 2 then
+    return
+  end
+  local word_len = word:len()
+  local text = buffer:text_range(0, buffer.length)
+  local pos = 1
+  local last = 1
+  while pos do
+    pos = text:find("[%p%s]"..word.."[%p%s]", last)
+    if pos then
+      last = pos + word_len
+      buffer.indicator_current = style
+      buffer:indicator_fill_range( pos, word_len )
+    end
+  end
+end
+
+
 --------------------
 -- Check initiators
 --------------------
@@ -120,6 +131,8 @@ local function check_text(text)
       uniq_words[word] = true
     end
   end
+  events.connect(SC_WORD_NOTFOUND, function(w) highlight(w, 3) end)
+  events.connect(SC_WORD_SUGGEST, function(w, s) highlight(w, 1) end)
   for word,_ in pairs(uniq_words)
   do
     checker:write(word.."\n")
