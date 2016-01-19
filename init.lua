@@ -65,6 +65,8 @@ local function check_frame()
   if finish == -1 then finish = buffer.length end
   start = buffer:word_start_position(start, false)
   finish = buffer:word_end_position(finish, false)
+  -- occurs when user scrolls buffer during position measurements
+  if start >= finish then return end 
   buffer:indicator_clear_range(start, finish)
   check_text(buffer:text_range(start, finish))
 end
