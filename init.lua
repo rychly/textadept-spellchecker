@@ -12,38 +12,7 @@ local SPELL_CHECKER = ""
 local spellchecker_process = false
 local current_dicts = false
 
---------------------------------------------------
--- Some timer nessesary for live spellchecking
---------------------------------------------------
-local function create_timer(on_expire, timeout)
-  -- Creates new timer object with given timeout and calling 'on_expire' when expires
-  return {
-    trigger = on_expire,
-    time = timeout,
-    last_cycle = false,
-    running = false
-  }
-end
-
-local function start(timer)
-  -- Starts timer.
-  -- If timer already started - gives additional timeout equivalent to original.
-  -- Full duration of additional timeouts and original wont be longer whan two original timeouts.
-  timer.last_cycle = false
-  if not timer.running then
-    timer.running = true
-    timeout(timer.time, function(t) 
-      if t.last_cycle then
-        t.trigger()
-        t.running = false
-        t.last_cycle = false
-        return false
-      end
-      t.last_cycle = true
-      return true
-    end, timer)
-  end
-end
+local timer = require("textadept-spellchecker.timer")
 
 ------------------------
 -- Backend data parsing
@@ -225,11 +194,10 @@ end
 -- Live checking routines
 -------------------------------
 local function on_expire()
-  -- ui.print("Fake checking...")
   check_frame()
 end
 
-local livecheck_timer = create_timer(on_expire, 2)
+local livecheck_timer = timer.create_timer(on_expire, 2)
 
 local function hasbit(x, bit)
   return x % (bit + bit) >= bit
@@ -237,19 +205,19 @@ end
 
 local function on_activity(updated)
   if updated and hasbit(updated, buffer.UPDATE_V_SCROLL) then
-    start(livecheck_timer)
+    timer.start(livecheck_timer)
   end
 end
 
 local function on_keypress()
-  start(livecheck_timer)
+  timer.start(livecheck_timer)
 end
 
 -------------------------------
 -- Module load/unload routines
 -------------------------------
 local function shutdown()
-  events.disconnect(events.FILE_AFTER_SAVE, check_file)
+  --events.disconnect(events.FILE_AFTER_SAVE, check_file)
   events.disconnect(events.RESET_BEFORE, shutdown)
   events.disconnect(events.INDICATOR_CLICK, on_indicator_click)
   events.disconnect(SC_WORD_ANSWER, on_answer)
@@ -260,7 +228,7 @@ local function shutdown()
   buffer:indicator_clear_range(0, buffer.length)
 end
 local function connect_events()
-  events.connect(events.FILE_AFTER_SAVE, check_file)
+  --events.connect(events.FILE_AFTER_SAVE, check_file)
   events.connect(events.QUIT, shutdown)
   events.connect(events.RESET_BEFORE, shutdown)
   events.connect(events.INDICATOR_CLICK, on_indicator_click)
