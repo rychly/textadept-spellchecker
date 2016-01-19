@@ -13,12 +13,12 @@ local spellchecker_process = false
 local current_dicts = false
 
 --------------------------------------------------
--- Some timer api nessesary for live spellchecking
+-- Some timer nessesary for live spellchecking
 --------------------------------------------------
 local function create_timer(on_expire, timeout)
   -- Creates new timer object with given timeout and calling 'on_expire' when expires
   return {
-    exec = on_expire,
+    trigger = on_expire,
     time = timeout,
     last_cycle = false,
     running = false
@@ -34,7 +34,7 @@ local function start(timer)
     timer.running = true
     timeout(timer.time, function(t) 
       if t.last_cycle then
-        t.on_expire()
+        t.trigger()
         t.running = false
         t.last_cycle = false
         return false
@@ -222,6 +222,30 @@ local function on_indicator_click(pos, mod)
 end
 
 -------------------------------
+-- Live checking routines
+-------------------------------
+local function on_expire()
+  -- ui.print("Fake checking...")
+  check_frame()
+end
+
+local livecheck_timer = create_timer(on_expire, 2)
+
+local function hasbit(x, bit)
+  return x % (bit + bit) >= bit
+end
+
+local function on_activity(updated)
+  if updated and hasbit(updated, buffer.UPDATE_V_SCROLL) then
+    start(livecheck_timer)
+  end
+end
+
+local function on_keypress()
+  start(livecheck_timer)
+end
+
+-------------------------------
 -- Module load/unload routines
 -------------------------------
 local function shutdown()
@@ -230,6 +254,8 @@ local function shutdown()
   events.disconnect(events.INDICATOR_CLICK, on_indicator_click)
   events.disconnect(SC_WORD_ANSWER, on_answer)
   events.disconnect(events.USER_LIST_SELECTION, on_suggestion_click)
+  events.disconnect(events.UPDATE_UI, on_activity)
+  events.disconnect(events.KEYPRESS, on_keypress)
   kill_checker()
   buffer:indicator_clear_range(0, buffer.length)
 end
@@ -240,6 +266,8 @@ local function connect_events()
   events.connect(events.INDICATOR_CLICK, on_indicator_click)
   events.connect(SC_WORD_ANSWER, on_answer)
   events.connect(events.USER_LIST_SELECTION, on_suggestion_click)
+  events.connect(events.UPDATE_UI, on_activity)
+  events.connect(events.KEYPRESS, on_keypress)
 end
 
 -- Check which spellcheckers present in the system
@@ -256,6 +284,6 @@ end
 -- Set default checker and register events when checker available
 if AVAILABLE_CHECKERS and AVAILABLE_CHECKERS[1] then
   --ui.print("Event registred!")
-  SPELL_CHECKER = AVAILABLE_CHECKERS[1]
+  SPELL_CHECKER = AVAILABLE_CHECKERS[2]
   connect_events()
 end
