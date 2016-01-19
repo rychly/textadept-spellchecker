@@ -71,6 +71,7 @@ local function shutdown()
   -- events.disconnect(events.FILE_AFTER_SAVE, check.file)
   events.disconnect(backend.ANSWER, highlight)
   events.disconnect(events.RESET_BEFORE, shutdown)
+  events.disconnect(events.INITIALIZED, connect_events)
   backend.kill_checker()
   buffer:indicator_clear_range(0, buffer.length)
 end
@@ -83,6 +84,6 @@ local function connect_events()
 end
 
 if backend then
-  connect_events()
+  events.connect(events.INITIALIZED, connect_events)
   return _M
 end
