@@ -1,66 +1,11 @@
 
--- Possible spellchecker program names
-local SPELL_CHECKERS = {"aspell", "hunspell", "hunspell.exe", "aspell.exe"}
--- Event for spellchecking data receiving
-local SC_WORD_ANSWER = "SC_wordsuggest"
 local SUGGESTION_LIST = 4242 -- List id
--- Available checkers in current system (will be filled after module load)
-local AVAILABLE_CHECKERS = {}
--- Current selected spellchecker
-local SPELL_CHECKER = ""
--- Handles for checker process
-local spellchecker_process = false
-local current_dicts = false
+
+
 
 local timer = require("textadept-spellchecker.timer")
+local backend = require("textadept-spellchecker.backend")
 
-------------------------
--- Backend data parsing
-------------------------
-local function parse(checker_answer)
-  -- Performs initial parsing of backend data and emits corresponding events
-  for line in checker_answer:gmatch("([^\r\n]*)\r?\n")
-  do
-    local mode, word, tail = line:match("([&#])%s+(%S+)(.*)")
-    if mode and mode:match("[#&]") then
-      local suggestions = tail:match(":%s?(.+)")
-      events.emit(SC_WORD_ANSWER, word, suggestions)
-    end
-  end
-end
-
-----------------------
--- Backend management
-----------------------
-local function get_checker(dicts)
-  -- Runs checker backend or return existent one
-  local dict_switch  = ""
-  if dicts and dicts:len() > 0 then
-    dict_switch = "-d "..dicts
-  end
-  if not spellchecker_process or spellchecker_process:status()  ~= "running" or current_dicts ~= dicts then
-    if current_dicts ~= dicts and spellchecker_process then
-      spellchecker_process:kill()
-    end
-    spellchecker_process = spawn(SPELL_CHECKER.." -m -a "..dict_switch, nil, parse, parse_err, parse_exit)
-    if spellchecker_process:status()  ~= "running" then
-      error("Can not start spellchecker "..SPELL_CHECKER)
-      shutdown()
-      return nil
-    end
-    -- Entering terse mode to improove performance
-    spellchecker_process:write("!\n")
-  end
-  current_dicts = dicts
-  return spellchecker_process
-end
-
-local function kill_checker()
-  -- Stops spellchecker backend
-  if spellchecker_process and spellchecker_process:status()  == "running" then
-    spellchecker_process:kill()
-  end
-end
 
 ------------------------
 -- Document highlighting
@@ -92,7 +37,7 @@ end
 --------------------
 local function check_text(text)
   -- Performs spelling check for supplied visible text
-  local checker = get_checker()
+  local checker = backend.get_checker()
   local uniq_words = {}
   -- for word in text:gmatch("[^%s%p][^%s%p]+")
   for word in text:gmatch("[^%s%p][^%s%p]+")
@@ -103,8 +48,8 @@ local function check_text(text)
   end
   -- Not sure how events work in textadept.
   -- Reconnect events just in case
-  events.disconnect(SC_WORD_ANSWER, highlight)
-  events.connect(SC_WORD_ANSWER, highlight)
+  events.disconnect(backend.ANSWER, highlight)
+  events.connect(backend.ANSWER, highlight)
   for word,_ in pairs(uniq_words)
   do
     checker:write(word.."\n")
@@ -174,9 +119,9 @@ local function on_indicator_click(pos, mod)
   local word = buffer:text_range(word_start, word_end)
   -- not sure how events in textadept work
   -- reconnection just in case
-  events.disconnect(SC_WORD_ANSWER, on_answer)
-  events.disconnect(SC_WORD_ANSWER, highlight)
-  events.connect(SC_WORD_ANSWER, on_answer)
+  events.disconnect(backend.ANSWER, on_answer)
+  events.disconnect(backend.ANSWER, highlight)
+  events.connect(backend.ANSWER, on_answer)
   current_autocomplete_handler = function(origin_word, suggestions)
     g_word_length = origin_word:len()
     local old_separator = buffer.auto_c_separator
@@ -186,7 +131,7 @@ local function on_indicator_click(pos, mod)
     )
     buffer.auto_c_separator = old_separator
   end
-  local checker = get_checker()
+  local checker = backend.get_checker()
   checker:write(word.."\n")
 end
 
@@ -220,11 +165,11 @@ local function shutdown()
   --events.disconnect(events.FILE_AFTER_SAVE, check_file)
   events.disconnect(events.RESET_BEFORE, shutdown)
   events.disconnect(events.INDICATOR_CLICK, on_indicator_click)
-  events.disconnect(SC_WORD_ANSWER, on_answer)
+  events.disconnect(backend.ANSWER, on_answer)
   events.disconnect(events.USER_LIST_SELECTION, on_suggestion_click)
   events.disconnect(events.UPDATE_UI, on_activity)
   events.disconnect(events.KEYPRESS, on_keypress)
-  kill_checker()
+  backend.kill_checker()
   buffer:indicator_clear_range(0, buffer.length)
 end
 local function connect_events()
@@ -232,26 +177,12 @@ local function connect_events()
   events.connect(events.QUIT, shutdown)
   events.connect(events.RESET_BEFORE, shutdown)
   events.connect(events.INDICATOR_CLICK, on_indicator_click)
-  events.connect(SC_WORD_ANSWER, on_answer)
+  events.connect(backend.ANSWER, on_answer)
   events.connect(events.USER_LIST_SELECTION, on_suggestion_click)
   events.connect(events.UPDATE_UI, on_activity)
   events.connect(events.KEYPRESS, on_keypress)
 end
 
--- Check which spellcheckers present in the system
-for i, v in ipairs(SPELL_CHECKERS) do
-  local status = io.popen(v.." -vv")
-  if status then
-    local result = status:read()
-    if result and result:match("Ispell") then
-      table.insert(AVAILABLE_CHECKERS, v)
-    end
-  end
-end
-
--- Set default checker and register events when checker available
-if AVAILABLE_CHECKERS and AVAILABLE_CHECKERS[1] then
-  --ui.print("Event registred!")
-  SPELL_CHECKER = AVAILABLE_CHECKERS[2]
+if backend then
   connect_events()
 end
