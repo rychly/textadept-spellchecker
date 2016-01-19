@@ -1,4 +1,5 @@
 local backend = require("textadept-spellchecker.backend")
+local check = require("textadept-spellchecker.check")
 ---------------------------
 -- Indicator click handler
 ---------------------------
@@ -16,8 +17,8 @@ local g_word_length = 0
 local function on_answer(word, suggestion)
   -- Handles autocompletion answer if it is nessesary
   -- then removes handler
-  if current_autocomplete_handler and suggestion then
-    current_autocomplete_handler(word, suggestion)
+  if current_autocomplete_handler then
+    current_autocomplete_handler(word, suggestion or "")
   end
   -- remove handler to avoid displaying suggestion again without click
   current_autocomplete_handler = false
@@ -26,13 +27,18 @@ end
 local function on_suggestion_click(list_id, selection, pos)
   -- Handles click on item in suggestion list and replaces mistake
   if list_id == SUGGESTION_LIST then
-    if selection ~= _L["Add to personal dictionary"] then
-      buffer:delete_range(g_word_start, g_word_length)
-      buffer:insert_text(buffer.current_pos, selection)
-    else
+    if selection == _L["Add to personal dictionary"] then
       -- TODO: addition to the dictionary
       ui.print("Spellchecker: Dictionary addition not implemented yet")
+    elseif selection == _L["Ignore"] then
+      local checker = backend.get_checker()
+      local word = buffer:text_range(g_word_start, g_word_start+g_word_length)
+      checker:write("@ "..word.."\n")
+    else
+      buffer:delete_range(g_word_start, g_word_length)
+      buffer:insert_text(buffer.current_pos, selection)
     end
+    check.frame()
   end
 end
 
@@ -48,7 +54,9 @@ local function on_indicator_click(pos, mod)
     local old_separator = buffer.auto_c_separator
     buffer.auto_c_separator = string.byte(",")
     buffer:user_list_show(SUGGESTION_LIST,
-      suggestions:gsub(", ",",")..",".._L["Add to personal dictionary"]
+      _L["Add to personal dictionary"]..","..
+      _L["Ignore"]..","..
+      suggestions:gsub(", ",",")..","
     )
     buffer.auto_c_separator = old_separator
   end
