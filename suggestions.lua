@@ -66,6 +66,13 @@ end
 
 local _M = {}
 
+local function shutdown()
+  events.disconnect(events.INDICATOR_CLICK, on_indicator_click)
+  events.disconnect(backend.ANSWER, on_answer)
+  events.disconnect(events.USER_LIST_SELECTION, on_suggestion_click)
+  events.disconnect(events.RESET_BEFORE, shutdown)
+end
+
 function _M.connect_events()
   events.connect(events.INDICATOR_CLICK, on_indicator_click)
   events.connect(backend.ANSWER, on_answer)
@@ -74,11 +81,6 @@ function _M.connect_events()
   events.connect(events.RESET_BEFORE, shutdown)
 end
 
-local function shutdown()
-  events.disconnect(events.INDICATOR_CLICK, on_indicator_click)
-  events.disconnect(backend.ANSWER, on_answer)
-  events.disconnect(events.USER_LIST_SELECTION, on_suggestion_click)
-  events.disconnect(events.RESET_BEFORE, shutdown)
-end
+
 
 return _M
