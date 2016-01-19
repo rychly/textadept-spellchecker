@@ -17,13 +17,13 @@ local SPELL_CHECKERS = {
 _M.ANSWER = "SC_wordsuggest"
 
 -- Available checkers in current system (will be filled after module load)
-_M.AVAILABLE_CHECKERS = {}
+local AVAILABLE_CHECKERS = {}
 -- Current selected spellchecker
-_M.SPELL_CHECKER = ""
+local SPELL_CHECKER = ""
 
 -- Handles for checker process
-_M.spellchecker_process = false
-_M.current_dicts = false
+local spellchecker_process = false
+local current_dicts = false
 
 local function parse(checker_answer)
   -- Performs initial parsing of backend data and emits corresponding events
@@ -43,25 +43,25 @@ function _M.get_checker(dicts)
   if dicts and dicts:len() > 0 then
     dict_switch = "-d "..dicts
   end
-  if not _M.spellchecker_process or _M.spellchecker_process:status()  ~= "running" or current_dicts ~= dicts then
-    if _M.current_dicts ~= dicts and _M.spellchecker_process then
-      _M.spellchecker_process:kill()
+  if not spellchecker_process or spellchecker_process:status()  ~= "running" or current_dicts ~= dicts then
+    if current_dicts ~= dicts and spellchecker_process then
+      spellchecker_process:kill()
     end
-    _M.spellchecker_process = spawn(_M.SPELL_CHECKER.." -m -a "..dict_switch, nil, parse)
-    if _M.spellchecker_process:status()  ~= "running" then
-      error("Can not start spellchecker ".._M.SPELL_CHECKER)
+    spellchecker_process = spawn(SPELL_CHECKER.." -m -a "..dict_switch, nil, parse)
+    if spellchecker_process:status()  ~= "running" then
+      error("Can not start spellchecker "..SPELL_CHECKER)
     end
     -- Entering terse mode to improove performance
-    _M.spellchecker_process:write("!\n")
+    spellchecker_process:write("!\n")
   end
-  _M.current_dicts = dicts
-  return _M.spellchecker_process
+  current_dicts = dicts
+  return spellchecker_process
 end
 
 function _M.kill_checker()
   -- Stops spellchecker backend
-  if _M.spellchecker_process and _M.spellchecker_process:status()  == "running" then
-    _M.spellchecker_process:kill()
+  if spellchecker_process and spellchecker_process:status()  == "running" then
+    spellchecker_process:kill()
   end
 end
 
@@ -72,14 +72,14 @@ for i, v in ipairs(SPELL_CHECKERS) do
   if status then
     local result = status:read()
     if result and result:match("Ispell") then
-      table.insert(_M.AVAILABLE_CHECKERS, v)
+      table.insert(AVAILABLE_CHECKERS, v)
     end
   end
 end
 
 -- Set default checker and register events when checker available
-if _M.AVAILABLE_CHECKERS and _M.AVAILABLE_CHECKERS[1] then
-  _M.SPELL_CHECKER = _M.AVAILABLE_CHECKERS[1]
+if AVAILABLE_CHECKERS and AVAILABLE_CHECKERS[1] then
+  SPELL_CHECKER = AVAILABLE_CHECKERS[1]
   return _M -- Backend ready to work
 end
 
