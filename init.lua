@@ -32,7 +32,6 @@ local function shutdown()
   events.disconnect(events.RESET_BEFORE, shutdown)
   events.disconnect(events.UPDATE_UI, on_activity)
   events.disconnect(events.KEYPRESS, on_keypress)
-  suggestions.disconnect_events()
 end
 local function connect_events()
   events.connect(events.QUIT, shutdown)

@@ -70,12 +70,15 @@ function _M.connect_events()
   events.connect(events.INDICATOR_CLICK, on_indicator_click)
   events.connect(backend.ANSWER, on_answer)
   events.connect(events.USER_LIST_SELECTION, on_suggestion_click)
+  events.connect(events.QUIT, shutdown)
+  events.connect(events.RESET_BEFORE, shutdown)
 end
 
-function _M.disconnect_events()
+local function shutdown()
   events.disconnect(events.INDICATOR_CLICK, on_indicator_click)
   events.disconnect(backend.ANSWER, on_answer)
   events.disconnect(events.USER_LIST_SELECTION, on_suggestion_click)
+  events.disconnect(events.RESET_BEFORE, shutdown)
 end
 
 return _M
