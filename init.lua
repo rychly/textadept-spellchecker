@@ -32,6 +32,7 @@ local function shutdown()
   events.disconnect(events.RESET_BEFORE, shutdown)
   events.disconnect(events.UPDATE_UI, on_activity)
   events.disconnect(events.KEYPRESS, on_keypress)
+  events.disconnect(events.INITIALIZED, connect_events)
 end
 local function connect_events()
   events.connect(events.QUIT, shutdown)
@@ -41,8 +42,9 @@ local function connect_events()
   if suggestions then
     suggestions.connect_events()
   end
+  on_keypress() -- Start spellchecking after loading
 end
 
 if check then
-  connect_events()
+  events.connect(events.INITIALIZED, connect_events)
 end
