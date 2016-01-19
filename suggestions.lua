@@ -73,7 +73,7 @@ local function shutdown()
   events.disconnect(events.RESET_BEFORE, shutdown)
 end
 
-function _M.connect_events()
+function _M.init()
   events.connect(events.INDICATOR_CLICK, on_indicator_click)
   events.connect(backend.ANSWER, on_answer)
   events.connect(events.USER_LIST_SELECTION, on_suggestion_click)
