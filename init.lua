@@ -28,7 +28,7 @@ local function init()
   if gui then
     gui.init()
   end
-  if live then
+  if live and not CURSES then
     live.init()
   end
 end

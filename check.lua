@@ -74,7 +74,9 @@ function _M.file()
 end
 
 function _M.shutdown()
-  -- events.disconnect(events.FILE_AFTER_SAVE, check.file)
+  if CURSES then
+    events.disconnect(events.FILE_AFTER_SAVE, _M.file)
+  end
   events.disconnect(backend.ANSWER, highlight)
   events.disconnect(events.RESET_BEFORE, shutdown)
   events.disconnect(events.INITIALIZED, connect_events)
@@ -89,7 +91,9 @@ function _M.shutdown()
 end
 
 function _M.connect_events()
-  -- events.connect(events.FILE_AFTER_SAVE, check.file)
+  if CURSES then -- livechecking not implemented for CURSES so its better to use filechecking
+    events.connect(events.FILE_AFTER_SAVE, _M.file)
+  end
   events.connect(backend.ANSWER, highlight)
   events.connect(events.QUIT, _M.shutdown)
   events.connect(events.RESET_BEFORE, _M.shutdown)
