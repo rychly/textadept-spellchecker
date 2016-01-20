@@ -65,15 +65,22 @@ function _M.kill_checker()
   end
 end
 
-
--- Check which spellcheckers present in the system
-for i, v in ipairs(SPELL_CHECKERS) do
-  local status = io.popen(v.." -vv")
+function _M.check_backend(backend)
+  local status = io.popen(backend.." -vv")
   if status then
     local result = status:read()
     if result and result:match("Ispell") then
-      table.insert(_M.AVAILABLE_CHECKERS, v)
+      return true
     end
+  end
+  return false
+end
+
+-- Check which spellcheckers present in the system
+for i, v in ipairs(SPELL_CHECKERS) do
+  
+  if _M.check_backend(v) then
+    table.insert(_M.AVAILABLE_CHECKERS, v)
   end
 end
 
