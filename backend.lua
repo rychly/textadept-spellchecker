@@ -23,7 +23,7 @@ _M.CURRENT_CHECKER = 1
 
 -- Handles for checker process
 _M.spellchecker_process = false
-_M.current_dicts = false
+_M.dicts = false
 
 local function parse(checker_answer)
   -- Performs initial parsing of backend data and emits corresponding events
@@ -37,16 +37,13 @@ local function parse(checker_answer)
   end
 end
 
-function _M.get_checker(dicts)
+function _M.get_checker()
   -- Runs checker backend or return existent one
   local dict_switch  = ""
-  if dicts and dicts:len() > 0 then
-    dict_switch = "-d "..dicts
+  if _M.dicts and _M.dicts:len() > 0 then
+    dict_switch = "-d ".._M.dicts
   end
-  if not _M.spellchecker_process or _M.spellchecker_process:status()  ~= "running" or _M.current_dicts ~= dicts then
-    if _M.current_dicts ~= dicts and _M.spellchecker_process then
-      _M.spellchecker_process:kill()
-    end
+  if not _M.spellchecker_process or _M.spellchecker_process:status()  ~= "running" then
     _M.spellchecker_process = spawn(_M.AVAILABLE_CHECKERS[_M.CURRENT_CHECKER].." -m -a "..dict_switch, nil, parse)
     if _M.spellchecker_process:status()  ~= "running" then
       error("Can not start spellchecker ".._M.AVAILABLE_CHECKERS[_M.CURRENT_CHECKER])
@@ -54,7 +51,6 @@ function _M.get_checker(dicts)
     -- Entering terse mode to improove performance
     _M.spellchecker_process:write("!\n")
   end
-  _M.current_dicts = dicts
   return _M.spellchecker_process
 end
 
