@@ -67,7 +67,7 @@ function _M.file()
   check_text(buffer:text_range(0, buffer.length))
 end
 
-local function shutdown()
+function _M.shutdown()
   -- events.disconnect(events.FILE_AFTER_SAVE, check.file)
   events.disconnect(backend.ANSWER, highlight)
   events.disconnect(events.RESET_BEFORE, shutdown)
@@ -76,14 +76,14 @@ local function shutdown()
   buffer:indicator_clear_range(0, buffer.length)
 end
 
-local function connect_events()
+function _M.connect_events()
   -- events.connect(events.FILE_AFTER_SAVE, check.file)
   events.connect(backend.ANSWER, highlight)
-  events.connect(events.QUIT, shutdown)
-  events.connect(events.RESET_BEFORE, shutdown)
+  events.connect(events.QUIT, _M.shutdown)
+  events.connect(events.RESET_BEFORE, _M.shutdown)
 end
 
 if backend then
-  events.connect(events.INITIALIZED, connect_events)
+  events.connect(events.INITIALIZED, _M.connect_events)
   return _M
 end
