@@ -75,7 +75,8 @@ end
 
 function _M.check_dict(dict)
   -- Checking if dictionary is exist
-  return os.execute(backend.." -a -d \""..dict.."\"")
+  local status = os.execute(_M.AVAILABLE_CHECKERS[_M.CURRENT_CHECKER].." -a -d \""..dict.."\"")
+  return status
 end
 
 -- Check which spellcheckers present in the system
