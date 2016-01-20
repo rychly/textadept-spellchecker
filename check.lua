@@ -56,13 +56,19 @@ function _M.frame()
   start = buffer:word_start_position(start, false)
   finish = buffer:word_end_position(finish, false)
   -- occurs when user scrolls buffer during position measurements
-  if start >= finish then return end 
+  if start >= finish then return end
+  buffer.indicator_current = 1
+  buffer:indicator_clear_range(0, buffer.length)
+  buffer.indicator_current = 3
   buffer:indicator_clear_range(0, buffer.length)
   check_text(buffer:text_range(start, finish))
 end
 
 function _M.file()
   -- Checking whole file in background
+  buffer.indicator_current = 1
+  buffer:indicator_clear_range(0, buffer.length)
+  buffer.indicator_current = 3
   buffer:indicator_clear_range(0, buffer.length)
   check_text(buffer:text_range(0, buffer.length))
 end
@@ -73,7 +79,13 @@ function _M.shutdown()
   events.disconnect(events.RESET_BEFORE, shutdown)
   events.disconnect(events.INITIALIZED, connect_events)
   backend.kill_checker()
-  buffer:indicator_clear_range(0, buffer.length)
+  for i, b in ipairs(_BUFFERS)
+  do
+    b.indicator_current = 1
+    b:indicator_clear_range(0, b.length)
+    b.indicator_current = 3
+    b:indicator_clear_range(0, b.length)
+  end
 end
 
 function _M.connect_events()
