@@ -53,10 +53,14 @@ local function on_indicator_click(pos, mod)
     g_word_length = origin_word:len()
     local old_separator = buffer.auto_c_separator
     buffer.auto_c_separator = string.byte(",")
+    local suggestions_list = _L["Add to personal dictionary"]..
+      ",".._L["Ignore"]
+    if suggestions and suggestions:len() > 0 then
+      suggestions_list = suggestions_list..","..
+      suggestions:gsub(", ",",")
+    end
     buffer:user_list_show(SUGGESTION_LIST,
-      _L["Add to personal dictionary"]..","..
-      _L["Ignore"]..","..
-      suggestions:gsub(", ",",")..","
+      suggestions_list
     )
     buffer.auto_c_separator = old_separator
   end
