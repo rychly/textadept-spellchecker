@@ -62,6 +62,7 @@ function _M.kill_checker()
 end
 
 function _M.check_backend(backend)
+  -- Checking if backend is exist and (perhaps) Ispell-compatible
   local status = io.popen(backend.." -vv")
   if status then
     local result = status:read()
@@ -70,6 +71,11 @@ function _M.check_backend(backend)
     end
   end
   return false
+end
+
+function _M.check_dict(dict)
+  -- Checking if dictionary is exist
+  return os.execute(backend.." -a -d \""..dict.."\"")
 end
 
 -- Check which spellcheckers present in the system
