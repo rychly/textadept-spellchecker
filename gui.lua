@@ -7,9 +7,12 @@ local backend = require("textadept-spellchecker.backend")
 local check = require("textadept-spellchecker.check")
 local live = require("textadept-spellchecker.livechecking")
 
+------------------------
+-- On/Off spellchecking
+------------------------
 local on_off_msgs = {
-  _L["Enable spellchecking"],
-  _L["Disable spellchecking"],
+  _L["Enable _spellchecking"],
+  _L["Disable _spellchecking"],
 }
 
 
@@ -23,10 +26,14 @@ local function toggle_spellchecking(check_state)
     check.connect_events()
     live.init()
   end
+  -- Changing messages and status in menu
   textadept.menu.menubar[#textadept.menu.menubar-1][1][1] = on_off_msgs[check_state]
   textadept.menu.menubar[#textadept.menu.menubar-1][1][2][2] = check_state
 end
 
+---------------------
+-- Backend selection
+---------------------
 local function new_backend()
   local input_box = {
     title = _L["Enter backend command"],
@@ -75,15 +82,47 @@ local function backend_selector()
   end
 end
 
+------------------------
+-- Dictionary selection
+------------------------
+local function dictionary_selector()
+  local input_box = {
+    title = _L["Enter dictionary name"],
+    informative_text = _L["Enter the dictionary name."..
+    "How to obtain list of available dictionaries see in documentation for selected backend"],
+    button2 = _L["_Cancel"],
+    float = true,
+  }
+  local status, dict = ui.dialogs.inputbox(input_box)
+  if status == 1 then
+    local status = backend.check_dict(dict)
+    if status == true then
+      backend.dicts = dict
+      backend.kill_checker()
+      check.frame()
+    else
+      ui.dialogs.ok_msgbox({
+        title = _L["Problem"],
+        text = dict.._L[" is not a correct dictionary for backend "]..backend.AVAILABLE_CHECKERS[backend.CURRENT_CHECKER],
+        no_cancel = true
+      })
+    end
+  end
+end
+
+-------------
+-- Root menu
+-------------
 local spellcheck_menu = {
   title = _L["S_pell check"],
   {
     on_off_msgs[2],
     {
       toggle_spellchecking,
-      2
+      2 -- on by default until config files not implemented
     }
   },
+  {""},
   {
     _L["_Backend selection"],
     backend_selector
