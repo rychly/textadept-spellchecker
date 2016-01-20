@@ -1,3 +1,4 @@
+local backend = require("textadept-spellchecker.backend")
 local timer = require("textadept-spellchecker.timer")
 local suggestions = require("textadept-spellchecker.suggestions")
 local check = require("textadept-spellchecker.check")
@@ -33,11 +34,17 @@ local function shutdown()
   events.disconnect(events.RESET_BEFORE, shutdown)
   events.disconnect(events.UPDATE_UI, on_activity)
   events.disconnect(events.KEYPRESS, on_keypress)
-  events.disconnect(events.INITIALIZED, connect_events)
 end
+
 local function init()
+  events.disconnect(events.INITIALIZED, init)
+  if not (backend and check)
+  then
+    return
+  end
   events.connect(events.QUIT, shutdown)
-  events.connect(events.RESET_BEFORE, shutdown)
+  -- TODO: Investigate why shutdown causes calling nil value
+  -- events.connect(events.RESET_BEFORE, shutdown)
   events.connect(events.UPDATE_UI, on_activity)
   events.connect(events.KEYPRESS, on_keypress)
   if suggestions then
@@ -49,6 +56,5 @@ local function init()
   on_keypress() -- Start spellchecking after loading
 end
 
-if check then
-  events.connect(events.INITIALIZED, init)
-end
+events.connect(events.INITIALIZED, init)
+

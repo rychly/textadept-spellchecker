@@ -78,7 +78,7 @@ function _M.init()
   events.connect(backend.ANSWER, on_answer)
   events.connect(events.USER_LIST_SELECTION, on_suggestion_click)
   events.connect(events.QUIT, shutdown)
-  events.connect(events.RESET_BEFORE, shutdown)
+  -- events.connect(events.RESET_BEFORE, shutdown)
 end
 
 
