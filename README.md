@@ -11,7 +11,7 @@ Spell checking being performed via ispell compatible backend. (aspell and hunspe
 | Suggestions via autocompletion interface            | Done                |
 | Live checking support                               | Done                |
 | GUI for backend and dictionary management           | Done                |
-| Saving/Loading backend and dictionary configuration | TODO                |
+| Saving/Loading backend and dictionary configuration | Done                |
 | Addition to personal dictionary support             | TODO                |
 | Localization                                        | TODO                |
 | Windows/OSX support                                 | Assistance required |

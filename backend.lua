@@ -2,7 +2,7 @@
 -- Backend management
 ----------------------
 local _M = {}
-
+local config = require("textadept-spellchecker.config")
 -- Possible spellchecker program names
 local SPELL_CHECKERS = {
   "aspell",
@@ -18,12 +18,9 @@ _M.ANSWER = "SC_wordsuggest"
 
 -- Available checkers in current system (will be filled after module load)
 _M.AVAILABLE_CHECKERS = {}
--- Current selected spellchecker
-_M.CURRENT_CHECKER = 1
 
 -- Handles for checker process
 _M.spellchecker_process = false
-_M.dicts = false
 
 local function parse(checker_answer)
   -- Performs initial parsing of backend data and emits corresponding events
@@ -37,16 +34,30 @@ local function parse(checker_answer)
   end
 end
 
+function _M.check_dict(dict)
+  -- Checking if dictionary is exist
+  if not (config.CURRENT_CHECKER and _M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER]) then
+    config.CURRENT_CHECKER = 1
+  end
+  local status = os.execute(_M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER].." -a -d \""..dict.."\"")
+  return status
+end
+
 function _M.get_checker()
   -- Runs checker backend or return existent one
   local dict_switch  = ""
-  if _M.dicts and _M.dicts:len() > 0 then
-    dict_switch = "-d ".._M.dicts
+  if type(config.dicts) == "string" and config.dicts:len() > 0 and _M.check_dict(config.dicts) then
+    dict_switch = "-d "..config.dicts
+  else
+    config.dicts = "" -- Invalid dictionary reset
+  end
+  if not (config.CURRENT_CHECKER and _M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER]) then
+    config.CURRENT_CHECKER = 1
   end
   if not _M.spellchecker_process or _M.spellchecker_process:status()  ~= "running" then
-    _M.spellchecker_process = spawn(_M.AVAILABLE_CHECKERS[_M.CURRENT_CHECKER].." -m -a "..dict_switch, nil, parse)
+    _M.spellchecker_process = spawn(_M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER].." -m -a "..dict_switch, nil, parse)
     if _M.spellchecker_process:status()  ~= "running" then
-      error("Can not start spellchecker ".._M.AVAILABLE_CHECKERS[_M.CURRENT_CHECKER])
+      error("Can not start spellchecker ".._M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER])
     end
     -- Entering terse mode to improove performance
     _M.spellchecker_process:write("!\n")
@@ -73,12 +84,6 @@ function _M.check_backend(backend)
   return false
 end
 
-function _M.check_dict(dict)
-  -- Checking if dictionary is exist
-  local status = os.execute(_M.AVAILABLE_CHECKERS[_M.CURRENT_CHECKER].." -a -d \""..dict.."\"")
-  return status
-end
-
 -- Check which spellcheckers present in the system
 for i, v in ipairs(SPELL_CHECKERS) do
   
@@ -89,7 +94,6 @@ end
 
 -- Set default checker and register events when checker available
 if _M.AVAILABLE_CHECKERS and _M.AVAILABLE_CHECKERS[1] then
-  _M.CURRENT_CHECKER = 1 -- By default we pick first checker
   return _M -- Backend ready to work
 end
 

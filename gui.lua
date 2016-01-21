@@ -6,6 +6,7 @@ local _M = {}
 local backend = require("textadept-spellchecker.backend")
 local check = require("textadept-spellchecker.check")
 local live = require("textadept-spellchecker.livechecking")
+local config = require("textadept-spellchecker.config")
 
 ------------------------
 -- On/Off spellchecking
@@ -15,6 +16,11 @@ local on_off_msgs = {
   _L["Disable _spellchecking"],
 }
 
+local function renew()
+  backend.kill_checker()
+  check.frame()
+  config:save()
+end
 
 local function toggle_spellchecking(check_state)
   if check_state == 2 then
@@ -29,6 +35,8 @@ local function toggle_spellchecking(check_state)
   -- Changing messages and status in menu
   textadept.menu.menubar[#textadept.menu.menubar-1][1][1] = on_off_msgs[check_state]
   textadept.menu.menubar[#textadept.menu.menubar-1][1][2][2] = check_state
+  config.checking = check_state
+  config:save()
 end
 
 ---------------------
@@ -66,7 +74,7 @@ local function backend_selector()
     button2 = _L["_Cancel"],
     button3 = _L["_Not in the list"],
     items = backend.AVAILABLE_CHECKERS,
-    select = backend.CURRENT_CHECKER
+    select = config.CURRENT_CHECKER
   }
   local status = 0
   local status, checker = ui.dialogs.dropdown(backend_select_dialog)
@@ -75,10 +83,9 @@ local function backend_selector()
   elseif status == 3 then
     checker = new_backend()
   end
-  if checker and checker ~= backend.CURRENT_CHECKER then
-    backend.CURRENT_CHECKER = checker or backend.CURRENT_CHECKER
-    backend.kill_checker()
-    check.frame()
+  if checker and checker ~= config.CURRENT_CHECKER then
+    config.CURRENT_CHECKER = checker or config.CURRENT_CHECKER
+    renew()
   end
 end
 
@@ -92,14 +99,14 @@ local function dictionary_selector()
     "How to obtain list of available dictionaries see in documentation for selected backend"],
     button2 = _L["_Cancel"],
     float = true,
+    text = config.dicts,
   }
   local status, dict = ui.dialogs.inputbox(input_box)
   if status == 1 then
     local status = backend.check_dict(dict)
     if status == true then
-      backend.dicts = dict
-      backend.kill_checker()
-      check.frame()
+      config.dicts = dict
+      renew()
     else
       ui.dialogs.ok_msgbox({
         title = _L["Problem"],
@@ -113,27 +120,28 @@ end
 -------------
 -- Root menu
 -------------
-local spellcheck_menu = {
-  title = _L["S_pell check"],
-  {
-    on_off_msgs[2],
-    {
-      toggle_spellchecking,
-      2 -- on by default until config files not implemented
-    }
-  },
-  {""},
-  {
-    _L["_Backend selection"],
-    backend_selector
-  },
-  {
-    _L["_Dictionary selection"],
-    dictionary_selector
-  },
-}
+
 
 function _M.init()
+  local spellcheck_menu = {
+    title = _L["S_pell check"],
+    {
+      on_off_msgs[config.checking or 1],
+      {
+        toggle_spellchecking,
+        config.checking or 1 
+      }
+    },
+    {""},
+    {
+      _L["_Backend selection"],
+      backend_selector
+    },
+    {
+      _L["_Dictionary selection"],
+      dictionary_selector
+    },
+  }
   table.insert(textadept.menu.menubar, #textadept.menu.menubar, spellcheck_menu)
 end
 
