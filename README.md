@@ -3,7 +3,20 @@ Spell checker plugin for textadept.
 
 Spell checking being performed via ispell compatible backend. (aspell and hunspell are supported at the moment)
 
-## Roadmap
+## Installation
+
+Clone this repository to "~/.textadept/modules/" and put following line into your "~/.textadept/init.lua":
+``` lua
+require "textadept-spellchecker"
+```
+
+## Screenshots
+
+<img src=https://pp.vk.me/c630828/v630828076/13311/vznRv4F45Zo.jpg>
+<img src=https://pp.vk.me/c630828/v630828076/13318/LriCUvlQfck.jpg>
+<img src=https://pp.vk.me/c630828/v630828076/1331f/Jji1QN24sFs.jpg>
+
+## Features
 
 | Feature                                             | Status              |
 |----------------------------------------------------:|:--------------------|
