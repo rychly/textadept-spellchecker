@@ -1,3 +1,9 @@
+----------------
+-- Localization
+----------------
+-- To make your own localization copy body of function set_default
+-- to new file with ".lua" extension and name of your locale in "localization" folder
+-- then you can edit fields in new file. For example see ru_RU.lua in "localization" folder
 
 local function set_default()
   -- GUI
