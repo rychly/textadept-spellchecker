@@ -108,7 +108,7 @@ local function dictionary_selector()
     else
       ui.dialogs.ok_msgbox({
         title = _L["PROBLEM"],
-        text = string.format(_L["NOT_DICT"], dict, backend.AVAILABLE_CHECKERS[backend.CURRENT_CHECKER]),
+        text = string.format(_L["NOT_DICT"], dict, backend.AVAILABLE_CHECKERS[config.CURRENT_CHECKER]),
         no_cancel = true
       })
     end
