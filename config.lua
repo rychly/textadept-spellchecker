@@ -41,7 +41,7 @@ local function shutdown()
 end
 
 function _M.init()
-  _M:load(_USERHOME..sep.."spellchecker.conf")
+  _M:load()
   events.connect(events.RESET_BEFORE, shutdown)
   events.connect(events.QUIT, shutdown)
 end
