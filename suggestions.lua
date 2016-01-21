@@ -27,13 +27,13 @@ end
 local function on_suggestion_click(list_id, selection, pos)
   -- Handles click on item in suggestion list and replaces mistake
   if list_id == SUGGESTION_LIST then
-    if selection == _L["Add to personal dictionary"] then
+    if selection == _L["DICT_ADD"] then
       -- TODO: addition to the dictionary
       local checker = backend.get_checker()
       local word = buffer:text_range(g_word_start, g_word_start+g_word_length)
       checker:write("* "..word.."\n")
       checker:write("#\n")
-    elseif selection == _L["Ignore"] then
+    elseif selection == _L["IGNORE"] then
       local checker = backend.get_checker()
       local word = buffer:text_range(g_word_start, g_word_start+g_word_length)
       checker:write("@ "..word.."\n")
@@ -56,8 +56,8 @@ local function on_indicator_click(pos, mod)
     g_word_length = origin_word:len()
     local old_separator = buffer.auto_c_separator
     buffer.auto_c_separator = string.byte(",")
-    local suggestions_list = _L["Add to personal dictionary"]..
-      ",".._L["Ignore"]
+    local suggestions_list = _L["DICT_ADD"]..
+      ",".._L["IGNORE"]
     if suggestions and suggestions:len() > 0 then
       suggestions_list = suggestions_list..","..
       suggestions:gsub(", ",",")

@@ -12,8 +12,8 @@ local config = require("textadept-spellchecker.config")
 -- On/Off spellchecking
 ------------------------
 local on_off_msgs = {
-  _L["Enable _spellchecking"],
-  _L["Disable _spellchecking"],
+  _L["_SCON"],
+  _L["_SCOFF"],
 }
 
 local function renew()
@@ -44,9 +44,8 @@ end
 ---------------------
 local function new_backend()
   local input_box = {
-    title = _L["Enter backend command"],
-    informative_text = _L["Enter the command to call of ispell-compatible backend."..
-    "Be careful! It will be executed on your computer!"],
+    title = _L["ENTER_SC_BACKEND"],
+    informative_text = _L["ENTER_SC_BACKEND_INFO"],
     button2 = _L["_Cancel"],
     float = true,
   }
@@ -57,8 +56,8 @@ local function new_backend()
       return command
     else
       ui.dialogs.ok_msgbox({
-        title = _L["Problem"],
-        text = command.._L[" is not Ispell-compatible backend or can not be executed"],
+        title = _L["PROBLEM"],
+        text = string.format(_L["NOT_BACKEND"], command),
         no_cancel = true
       })
     end
@@ -68,11 +67,11 @@ end
 
 local function backend_selector()
   local backend_select_dialog = {
-    title = _L["Select backend"],
-    text = _L["Select backend to be used for spellchecking:"],
+    title = _L["SELECT_BACKEND"],
+    text = _L["SELECT_BACKEND_INFO"],
     float = true,
     button2 = _L["_Cancel"],
-    button3 = _L["_Not in the list"],
+    button3 = _L["_NOTINLIST"],
     items = backend.AVAILABLE_CHECKERS,
     select = config.CURRENT_CHECKER
   }
@@ -94,9 +93,8 @@ end
 ------------------------
 local function dictionary_selector()
   local input_box = {
-    title = _L["Enter dictionary name"],
-    informative_text = _L["Enter the dictionary name."..
-    "How to obtain list of available dictionaries see in documentation for selected backend"],
+    title = _L["ENTER_DICT"],
+    informative_text = _L["ENTER_DICT_INFO"],
     button2 = _L["_Cancel"],
     float = true,
     text = config.dicts,
@@ -109,8 +107,8 @@ local function dictionary_selector()
       renew()
     else
       ui.dialogs.ok_msgbox({
-        title = _L["Problem"],
-        text = dict.._L[" is not a correct dictionary for backend "]..backend.AVAILABLE_CHECKERS[backend.CURRENT_CHECKER],
+        title = _L["PROBLEM"],
+        text = string.format(_L["NOT_DICT"], dict, backend.AVAILABLE_CHECKERS[backend.CURRENT_CHECKER]),
         no_cancel = true
       })
     end
@@ -124,7 +122,7 @@ end
 
 function _M.init()
   local spellcheck_menu = {
-    title = _L["S_pell check"],
+    title = _L["S_PELLCHECK"],
     {
       on_off_msgs[config.checking or 1],
       {
@@ -134,11 +132,11 @@ function _M.init()
     },
     {""},
     {
-      _L["_Backend selection"],
+      _L["_BACKENDSELECT"],
       backend_selector
     },
     {
-      _L["_Dictionary selection"],
+      _L["_DICTSELECT"],
       dictionary_selector
     },
   }

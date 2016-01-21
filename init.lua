@@ -1,3 +1,4 @@
+require("textadept-spellchecker.localization")
 local backend = require("textadept-spellchecker.backend")
 local suggestions = require("textadept-spellchecker.suggestions")
 local check = require("textadept-spellchecker.check")
