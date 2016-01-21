@@ -6,16 +6,16 @@ local check = require("textadept-spellchecker.check")
 local SUGGESTION_LIST = 4242 -- List id
 
 -- autocomplete handler will be placed here to avoid presence of
--- many anonimous handlers in event table
+-- many anonymous handlers in event table
 local current_autocomplete_handler = false
 
--- Word begining and lenght for correct substitution of suggestion
+-- Word beginning and length for correct substitution of suggestion
 local g_word_start = 0
 local g_word_length = 0
 
 -- only this autocomplete handler presents in event table
 local function on_answer(word, suggestion)
-  -- Handles autocompletion answer if it is nessesary
+  -- Handles autocompletion answer if it is necessary
   -- then removes handler
   if current_autocomplete_handler then
     current_autocomplete_handler(word, suggestion or "")
@@ -29,7 +29,10 @@ local function on_suggestion_click(list_id, selection, pos)
   if list_id == SUGGESTION_LIST then
     if selection == _L["Add to personal dictionary"] then
       -- TODO: addition to the dictionary
-      ui.print("Spellchecker: Dictionary addition not implemented yet")
+      local checker = backend.get_checker()
+      local word = buffer:text_range(g_word_start, g_word_start+g_word_length)
+      checker:write("* "..word.."\n")
+      checker:write("#\n")
     elseif selection == _L["Ignore"] then
       local checker = backend.get_checker()
       local word = buffer:text_range(g_word_start, g_word_start+g_word_length)
