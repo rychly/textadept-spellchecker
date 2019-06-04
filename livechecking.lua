@@ -1,5 +1,6 @@
 local check = require("textadept-spellchecker.check")
 local timer = require("textadept-spellchecker.timer")
+
 -------------------------------
 -- Live checking routines
 -------------------------------

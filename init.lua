@@ -6,7 +6,6 @@ local gui = require("textadept-spellchecker.gui")
 local live = require("textadept-spellchecker.livechecking")
 local config = require("textadept-spellchecker.config")
 
-
 -------------------------------
 -- Module load/unload routines
 -------------------------------
@@ -32,15 +31,14 @@ local function init()
   if gui then
     gui.init()
   end
-  if live and not CURSES then
+  if (config.live == config.ON) and live and not CURSES then
     live.init()
   end
   -- Shutdown checkers when checking is off
-  if config.checking ~= 2 then
+  if config.checking ~= config.ON then
     check.shutdown()
     live.shutdown()
   end
 end
 
 events.connect(events.INITIALIZED, init)
-

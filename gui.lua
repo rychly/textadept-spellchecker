@@ -12,8 +12,13 @@ local config = require("textadept-spellchecker.config")
 -- On/Off spellchecking
 ------------------------
 local on_off_msgs = {
-  _L["_SCON"],
-  _L["_SCOFF"],
+  [config.OFF] = _L["_SCON"],
+  [config.ON] = _L["_SCOFF"],
+}
+
+local on_off_live_msgs = {
+  [config.OFF] = _L["_LSCON"],
+  [config.ON] = _L["_LSCOFF"],
 }
 
 local function renew()
@@ -22,20 +27,37 @@ local function renew()
   config:save()
 end
 
-local function toggle_spellchecking(check_state)
-  if check_state == 2 then
-    check_state = 1
+local function toggle_spellchecking(current_check_state, fixed_live_state)
+  if current_check_state == config.ON then
+    current_check_state = config.OFF
     check.shutdown()
     live.shutdown()
   else
-    check_state = 2
+    current_check_state = config.ON
     check.connect_events()
+    if fixed_live_state == config.ON then
+      live.init()
+    end
+  end
+  -- Changing messages and status in menu
+  textadept.menu.menubar[#textadept.menu.menubar-1][1][1] = on_off_msgs[current_check_state]
+  textadept.menu.menubar[#textadept.menu.menubar-1][2][1] = on_off_live_msgs[fixed_live_state]
+  config.checking = current_check_state
+  config.live = fixed_live_state
+  config:save()
+end
+
+local function toggle_live_spellchecking(current_live_state)
+  if current_live_state == config.ON then
+    current_live_state = config.OFF
+    live.shutdown()
+  else
+    current_live_state = config.ON
     live.init()
   end
   -- Changing messages and status in menu
-  textadept.menu.menubar[#textadept.menu.menubar-1][1][1] = on_off_msgs[check_state]
-  textadept.menu.menubar[#textadept.menu.menubar-1][1][2][2] = check_state
-  config.checking = check_state
+  textadept.menu.menubar[#textadept.menu.menubar-1][2][1] = on_off_live_msgs[current_live_state]
+  config.live = current_live_state
   config:save()
 end
 
@@ -124,11 +146,30 @@ function _M.init()
   local spellcheck_menu = {
     title = _L["S_PELLCHECK"],
     {
-      on_off_msgs[config.checking or 1],
-      {
-        toggle_spellchecking,
-        config.checking or 1 
-      }
+      on_off_msgs[config.checking or config.ON],
+      function() toggle_spellchecking(config.checking or config.ON, config.live or config.OFF) end
+    },
+    {
+      on_off_live_msgs[config.live or config.OFF],
+      function() toggle_live_spellchecking(config.live or config.OFF) end
+    },
+    {""},
+    {
+      _L["_CHECKFRAME"],
+      check.frame
+    },
+    {
+      _L["_CHECKFILE"],
+      check.file
+    },
+    {""},
+    {
+      _L["_CLEARCURRENT"],
+      function() check.clear(buffer) end
+    },
+    {
+      _L["_CLEARALL"],
+      check.clear_all
     },
     {""},
     {

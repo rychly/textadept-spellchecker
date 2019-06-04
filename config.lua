@@ -10,6 +10,9 @@ end
 
 local FILENAME = _USERHOME..sep.."spellchecker.conf"
 
+_M.ON = 2
+_M.OFF = 1
+
 function _M:load()
   local handle = io.open(FILENAME, "r")
   if not handle then return end

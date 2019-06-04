@@ -7,11 +7,11 @@ local config = require("textadept-spellchecker.config")
 local SPELL_CHECKERS = {
   "aspell",
   "hunspell",
-  "ispell",
-  "hunspell.exe",
-  "aspell.exe",
-  "ispell.exe"
+  "ispell"
 }
+local ispell_cmd = '%s -a'
+local ispell_cmd_dict = ispell_cmd .. ' -d "%q"'
+local ispell_cmd_dict_no_stdin = ispell_cmd_dict .. ' </dev/null'
 
 -- Event for spellchecking data receiving
 _M.ANSWER = "SC_wordsuggest"
@@ -39,25 +39,26 @@ function _M.check_dict(dict)
   if not (config.CURRENT_CHECKER and _M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER]) then
     config.CURRENT_CHECKER = 1
   end
-  local status = os.execute(_M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER].." -a -d \""..dict.."\"")
+  local status = os.execute(string.format(ispell_cmd_dict_no_stdin, _M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER], dict))
   return status
 end
 
 function _M.get_checker()
   -- Runs checker backend or return existent one
-  local dict_switch  = ""
-  if type(config.dicts) == "string" and config.dicts:len() > 0 and _M.check_dict(config.dicts) then
-    dict_switch = "-d "..config.dicts
-  else
-    config.dicts = "" -- Invalid dictionary reset
-  end
   if not (config.CURRENT_CHECKER and _M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER]) then
     config.CURRENT_CHECKER = 1
   end
+  local ispell_to_spawn
+  if type(config.dicts) == "string" and config.dicts:len() > 0 and _M.check_dict(config.dicts) then
+    ispell_to_spawn = string.format(ispell_cmd_dict, _M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER], config.dicts)
+  else
+    ispell_to_spawn = string.format(ispell_cmd, _M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER])
+    config.dicts = "" -- Invalid dictionary reset
+  end
   if not _M.spellchecker_process or _M.spellchecker_process:status()  ~= "running" then
-    _M.spellchecker_process = spawn(_M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER].." -m -a "..dict_switch, nil, parse)
+    _M.spellchecker_process = os.spawn(ispell_to_spawn, parse)
     if _M.spellchecker_process:status()  ~= "running" then
-      error("Can not start spellchecker ".._M.AVAILABLE_CHECKERS[config.CURRENT_CHECKER])
+      error("Can not start spellchecker as "..ispell_to_spawn)
     end
     -- Entering terse mode to improove performance
     _M.spellchecker_process:write("!\n")
@@ -86,7 +87,6 @@ end
 
 -- Check which spellcheckers present in the system
 for i, v in ipairs(SPELL_CHECKERS) do
-  
   if _M.check_backend(v) then
     table.insert(_M.AVAILABLE_CHECKERS, v)
   end
@@ -96,6 +96,5 @@ end
 if _M.AVAILABLE_CHECKERS and _M.AVAILABLE_CHECKERS[1] then
   return _M -- Backend ready to work
 end
-
 
 return false

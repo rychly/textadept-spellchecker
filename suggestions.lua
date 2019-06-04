@@ -1,5 +1,6 @@
 local backend = require("textadept-spellchecker.backend")
 local check = require("textadept-spellchecker.check")
+
 ---------------------------
 -- Indicator click handler
 ---------------------------
@@ -87,7 +88,5 @@ function _M.init()
   events.connect(events.QUIT, shutdown)
   -- events.connect(events.RESET_BEFORE, shutdown)
 end
-
-
 
 return _M

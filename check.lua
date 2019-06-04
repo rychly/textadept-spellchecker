@@ -1,9 +1,16 @@
-
 --------------------
 -- Check initiators
 --------------------
 local _M = {}
 local backend = require("textadept-spellchecker.backend")
+
+-----------------------
+-- Highlighting styles
+-----------------------
+local indicator_number_error = 3
+local indicator_number_suggestion = 1
+buffer.indic_style[indicator_number_error] = buffer.INDIC_GRADIENT
+buffer.indic_style[indicator_number_suggestion] = buffer.INDIC_GRADIENT
 
 ------------------------
 -- Document highlighting
@@ -13,8 +20,8 @@ local function highlight(word, suggestions)
   if word == nil or word:len() < 2 then
     return
   end
-  local style = 3
-  if suggestions then style = 1 end
+  local style = indicator_number_error
+  if suggestions then style = indicator_number_suggestion end
   local word_len = word:len()
   local text = buffer:text_range(0, buffer.length)
   local pos = 1
@@ -57,20 +64,28 @@ function _M.frame()
   finish = buffer:word_end_position(finish, false)
   -- occurs when user scrolls buffer during position measurements
   if start >= finish then return end
-  buffer.indicator_current = 1
-  buffer:indicator_clear_range(0, buffer.length)
-  buffer.indicator_current = 3
-  buffer:indicator_clear_range(0, buffer.length)
+  _M.clear(buffer)
   check_text(buffer:text_range(start, finish))
 end
 
 function _M.file()
   -- Checking whole file in background
-  buffer.indicator_current = 1
-  buffer:indicator_clear_range(0, buffer.length)
-  buffer.indicator_current = 3
-  buffer:indicator_clear_range(0, buffer.length)
+  _M.clear(buffer)
   check_text(buffer:text_range(0, buffer.length))
+end
+
+function _M.clear(buffer)
+  buffer.indicator_current = indicator_number_suggestion
+  buffer:indicator_clear_range(0, buffer.length)
+  buffer.indicator_current = indicator_number_error
+  buffer:indicator_clear_range(0, buffer.length)
+end
+
+function _M.clear_all()
+  for i, b in ipairs(_BUFFERS)
+  do
+    _M.clear(b)
+  end
 end
 
 function _M.shutdown()
@@ -81,13 +96,7 @@ function _M.shutdown()
   events.disconnect(events.RESET_BEFORE, shutdown)
   events.disconnect(events.INITIALIZED, connect_events)
   backend.kill_checker()
-  for i, b in ipairs(_BUFFERS)
-  do
-    b.indicator_current = 1
-    b:indicator_clear_range(0, b.length)
-    b.indicator_current = 3
-    b:indicator_clear_range(0, b.length)
-  end
+  _M.clear_all()
 end
 
 function _M.connect_events()

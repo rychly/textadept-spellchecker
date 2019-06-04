@@ -20,7 +20,7 @@ function _M.start(timer)
   timer.last_cycle = false
   if not timer.running then
     timer.running = true
-    timeout(timer.time, function(t) 
+    timeout(timer.time, function(t)
       if t.last_cycle then
         t.trigger()
         t.running = false

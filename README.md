@@ -1,13 +1,15 @@
 # TASC
+
 TASC is a spell checker plugin for textadept.
 
 Spell checking being performed via ispell compatible backend. (aspell and hunspell are supported at the moment)
 
 ## Installation
 
-Clone this repository to "~/.textadept/modules/" and put following line into your "~/.textadept/init.lua":
+Clone the root of this repository to "${HOME}/.textadept/modules/textadept-spellchecker"
+and put following line into your "${HOME}/.textadept/init.lua":
 ``` lua
-require "TASC"
+require('textadept-spellchecker')
 ```
 
 ## Screenshots
@@ -26,6 +28,6 @@ require "TASC"
 | GUI for backend and dictionary management           | Done                |
 | Saving/Loading backend and dictionary configuration | Done                |
 | Addition to personal dictionary support             | Done                |
-| Localization                                        | en, ru              |
+| Localization                                        | en, ru, cs          |
 | Localization for other languages                    | Assistance required |
 | Windows/OSX support                                 | Assistance required |
